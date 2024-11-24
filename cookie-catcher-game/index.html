@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Catcher</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1c20 0%, #333741 100%);
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+        }
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%);
+            border: 4px solid #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        #basket {
+            position: absolute;
+            bottom: 20px;
+            width: 100px;
+            height: 60px;
+            background: linear-gradient(45deg, #8b4513 0%, #d2691e 100%);
+            border-radius: 10px 10px 50% 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border: 3px solid #6b3410;
+            transition: transform 0.1s;
+        }
+        #basket:after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        .cookie {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #d2691e 0%, #8b4513 100%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .cookie:before {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #4a2508;
+            border-radius: 50%;
+            top: 25%;
+            left: 25%;
+            box-shadow: 
+                15px 0 0 #4a2508,
+                0 15px 0 #4a2508,
+                15px 15px 0 #4a2508;
+        }
+        #score-container, #lives-container, #high-score {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        #score-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 20px;
+        }
+        #lives-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .heart {
+            color: #e74c3c;
+            font-size: 24px;
+        }
+        #high-score {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            font-size: 18px;
+            color: #ffd700;
+        }
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px 40px;
+            border-radius: 20px;
+            border: 3px solid #fff;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+        #game-over h2 {
+            color: #e74c3c;
+            font-size: 36px;
+            margin: 0 0 20px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        #game-over button {
+            background: #2ecc71;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, background 0.2s;
+        }
+        #game-over button:hover {
+            background: #27ae60;
+            transform: scale(1.05);
+        }
+        #sound-toggle {
+            position: absolute;
+            top: 20px;
+            right: 100px;
+            background: rgba(0, 0, 0, 0.6);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        #sound-toggle:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+        @keyframes cookieSpin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .cookie {
+            animation: cookieSpin 3s linear infinite;
+        }
+        .score-popup {
+            position: absolute;
+            color: #2ecc71;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: scorePopup 1s ease-out forwards;
+        }
+        @keyframes scorePopup {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="score-container">Score: <span id="score">0</span></div>
+        <div id="high-score">High Score: <span id="high-score-value">0</span></div>
+        <div id="lives-container">Lives: <span id="lives-display"></span></div>
+        <button id="sound-toggle">🔊</button>
+        <div id="basket"></div>
+        <div id="game-over">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <button onclick="restartGame()">Play Again</button>
+        </div>
+        <script>
+            const gameContainer = document.getElementById('game-container');
+            const basket = document.getElementById('basket');
+            const scoreElement = document.getElementById('score');
+            const livesElement = document.getElementById('lives-display');
+            const gameOverScreen = document.getElementById('game-over');
+            const finalScoreElement = document.getElementById('final-score');
+            const highScoreElement = document.getElementById('high-score-value');
+            const soundToggle = document.getElementById('sound-toggle');
+
+            // Create sound pools for multiple simultaneous playback
+            const SOUND_POOL_SIZE = 5;
+            const missSoundPool = Array.from({ length: SOUND_POOL_SIZE }, () => {
+                const audio = new Audio('sounds/miss.mp3');
+                audio.preload = 'auto';
+                return audio;
+            });
+            
+            const catchSoundPool = Array.from({ length: SOUND_POOL_SIZE }, () => {
+                const audio = new Audio('sounds/catch.mp3');
+                audio.preload = 'auto';
+                return audio;
+            });
+
+            let currentMissSoundIndex = 0;
+            let currentCatchSoundIndex = 0;
+
+            let score = 0;
+            let lives = 3;
+            let highScore = localStorage.getItem('highScore') || 0;
+            let gameIsOver = false;
+            let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+            highScoreElement.textContent = highScore;
+            updateLives();
+            updateSoundIcon();
+
+            function updateSoundIcon() {
+                soundToggle.textContent = soundEnabled ? '🔊' : '🔈';
+            }
+
+            soundToggle.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                localStorage.setItem('soundEnabled', soundEnabled);
+                updateSoundIcon();
+            });
+
+            function playSound(type) {
+                if (!soundEnabled) return;
+
+                try {
+                    if (type === 'miss') {
+                        const sound = missSoundPool[currentMissSoundIndex];
+                        sound.currentTime = 0;
+                        sound.volume = 0.6; // Slightly reduce volume
+                        const playPromise = sound.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                console.log('Sound play error:', error);
+                            });
+                        }
+                        currentMissSoundIndex = (currentMissSoundIndex + 1) % SOUND_POOL_SIZE;
+                    } else if (type === 'catch') {
+                        const sound = catchSoundPool[currentCatchSoundIndex];
+                        sound.currentTime = 0;
+                        const playPromise = sound.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                console.log('Sound play error:', error);
+                            });
+                        }
+                        currentCatchSoundIndex = (currentCatchSoundIndex + 1) % SOUND_POOL_SIZE;
+                    }
+                } catch (error) {
+                    console.log('Sound error:', error);
+                }
+            }
+
+            function updateLives() {
+                livesElement.innerHTML = '&#10084;'.repeat(lives);
+            }
+
+            // Basket movement
+            gameContainer.addEventListener('mousemove', (e) => {
+                const rect = gameContainer.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                basket.style.left = Math.max(0, Math.min(gameContainer.offsetWidth - basket.offsetWidth, x)) + 'px';
+            });
+
+            function createScorePopup(x, y) {
+                const popup = document.createElement('div');
+                popup.className = 'score-popup';
+                popup.textContent = '+1';
+                popup.style.left = x + 'px';
+                popup.style.top = y + 'px';
+                gameContainer.appendChild(popup);
+                setTimeout(() => popup.remove(), 1000);
+            }
+
+            function createCookie() {
+                if (gameIsOver) return;
+                
+                const cookie = document.createElement('div');
+                cookie.className = 'cookie';
+                cookie.style.left = Math.random() * (gameContainer.offsetWidth - 30) + 'px';
+                cookie.style.top = '0px';
+                gameContainer.appendChild(cookie);
+
+                const fallSpeed = 3 + Math.min(score / 20, 4);
+                let posY = 0;
+
+                function fall() {
+                    if (gameIsOver) {
+                        cookie.remove();
+                        return;
+                    }
+
+                    posY += fallSpeed;
+                    cookie.style.top = posY + 'px';
+
+                    // Check collision with basket
+                    const cookieRect = cookie.getBoundingClientRect();
+                    const basketRect = basket.getBoundingClientRect();
+
+                    if (
+                        cookieRect.bottom >= basketRect.top &&
+                        cookieRect.left <= basketRect.right &&
+                        cookieRect.right >= basketRect.left &&
+                        cookieRect.top <= basketRect.bottom
+                    ) {
+                        score++;
+                        scoreElement.textContent = score;
+                        createScorePopup(cookieRect.left - gameContainer.getBoundingClientRect().left, cookieRect.top - gameContainer.getBoundingClientRect().top);
+                        playSound('catch');
+                        if (score > highScore) {
+                            highScore = score;
+                            localStorage.setItem('highScore', highScore);
+                            highScoreElement.textContent = highScore;
+                        }
+                        cookie.remove();
+                        return;
+                    }
+
+                    // Check if cookie is missed
+                    if (posY > gameContainer.offsetHeight) {
+                        lives--;
+                        updateLives();
+                        playSound('miss');
+                        cookie.remove();
+
+                        if (lives <= 0) {
+                            gameOver();
+                        }
+                        return;
+                    }
+
+                    requestAnimationFrame(fall);
+                }
+
+                fall();
+            }
+
+            function gameOver() {
+                gameIsOver = true;
+                gameOverScreen.style.display = 'block';
+                finalScoreElement.textContent = score;
+            }
+
+            function restartGame() {
+                gameIsOver = false;
+                score = 0;
+                lives = 3;
+                scoreElement.textContent = score;
+                updateLives();
+                gameOverScreen.style.display = 'none';
+                // Remove any remaining cookies
+                document.querySelectorAll('.cookie').forEach(cookie => cookie.remove());
+            }
+
+            // Create cookies at regular intervals
+            setInterval(createCookie, 1000);
+        </script>
+    </div>
+</body>
+</html>
